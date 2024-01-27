@@ -58,6 +58,7 @@ class ProcessJob:
         try:
             with open(ar_json, "r") as json_file:
                 rpu_dict = json.load(json_file)
+                rpu_dict.update({"crop": True})
                 json_dict = {"active_area": rpu_dict}
 
                 # Check if "presets" key exists
@@ -80,22 +81,6 @@ class ProcessJob:
                     preset["right"] = right
                     preset["top"] = top
                     preset["bottom"] = bottom
-
-                # Check if any crop value is nonzero
-                has_nonzero_crops = any(
-                    value != 0
-                    for preset in presets
-                    for value in [
-                        preset.get("left", 0),
-                        preset.get("right", 0),
-                        preset.get("top", 0),
-                        preset.get("bottom", 0),
-                    ]
-                )
-
-                json_dict.setdefault("active_area", {}).update(
-                    {"crop": has_nonzero_crops}
-                )
 
             return json_dict
 
