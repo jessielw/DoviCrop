@@ -37,7 +37,7 @@ options:
                         application
   -d DOVI_TOOL, --dovi-tool DOVI_TOOL
                         Path to dovi_tool executable
-  --no-clean-up         Prevents removal of JSON files created during the job process
+  --no-clean-up         Prevents removal of temporary files created during the job process
 ```
 
 ## Example
