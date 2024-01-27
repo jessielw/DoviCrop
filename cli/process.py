@@ -36,9 +36,7 @@ class ProcessJob:
 
     def export_active_areas(self) -> Path:
         """Uses dovi_tool to extract the active area data to JSON"""
-        ar_json = self.args.output.parent / Path(
-            self.args.output.stem + "_exp_ar"
-        ).with_suffix(".json")
+        ar_json = self.args.output.with_name(self.args.output.stem + "_exp_ar.json")
         command = [
             str(self.args.dovi_tool),
             "export",
@@ -94,9 +92,9 @@ class ProcessJob:
 
     def write_modified_json(self, json_dict: dict) -> Path:
         """Writes modified JSON to file"""
-        cropped_json = self.args.output.parent / Path(
-            self.args.output.stem + "_crop_ar"
-        ).with_suffix(".json")
+        cropped_json = self.args.output.with_name(
+            self.args.output.stem + "_crop_ar.json"
+        )
         with open(cropped_json, "w+") as json_file:
             json_file.write(json.dumps(json_dict, indent=2))
         if cropped_json.exists():
