@@ -21,7 +21,7 @@ class ProcessJob:
         modified_json = self.set_mode(applied_crops)
         write_cropped_json = self.write_modified_json(modified_json)
         self.modified_rpu = self.modify_rpu(write_cropped_json)
-        self.clean_up([ar_json, write_cropped_json])
+        self.clean_up([self.args.input, ar_json, write_cropped_json])
 
     def check_rpu(self, file_path: Path, exit_on_success: bool):
         """Basic check to see if the RPU has ANY data inside of it"""
@@ -36,8 +36,8 @@ class ProcessJob:
 
     def export_active_areas(self) -> Path:
         """Uses dovi_tool to extract the active area data to JSON"""
-        ar_json = self.args.input.parent / Path(
-            self.args.input.stem + "_exp_ar"
+        ar_json = self.args.output.parent / Path(
+            self.args.output.stem + "_exp_ar"
         ).with_suffix(".json")
         command = [
             str(self.args.dovi_tool),
@@ -94,8 +94,8 @@ class ProcessJob:
 
     def write_modified_json(self, json_dict: dict) -> Path:
         """Writes modified JSON to file"""
-        cropped_json = self.args.input.parent / Path(
-            self.args.input.stem + "_cropped_ar"
+        cropped_json = self.args.output.parent / Path(
+            self.args.output.stem + "_crop_ar"
         ).with_suffix(".json")
         with open(cropped_json, "w+") as json_file:
             json_file.write(json.dumps(json_dict, indent=2))
@@ -106,11 +106,6 @@ class ProcessJob:
 
     def modify_rpu(self, cropped_json: Path) -> Path:
         """Modifies original RPU with modified JSON"""
-        output_path = self.args.output
-        if not output_path:
-            output_path = self.args.input.parent / Path(
-                self.args.input.stem + "_cropped"
-            ).with_suffix(".bin")
         command = [
             str(self.args.dovi_tool),
             "editor",
@@ -119,11 +114,11 @@ class ProcessJob:
             "-j",
             str(cropped_json),
             "-o",
-            str(output_path),
+            str(self.args.output),
         ]
         job = sp.run(command, check=True)
-        if job.returncode == 0 and output_path.exists():
-            return output_path
+        if job.returncode == 0 and self.args.output.exists():
+            return self.args.output
         else:
             raise DoviCropJSONError("Error writing modified RPU")
 
