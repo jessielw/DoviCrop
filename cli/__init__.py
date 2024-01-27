@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 from cli._version import program_name, __version__
 from cli.utils import validate_file, validate_int, exit_application
@@ -57,7 +58,7 @@ def main():
     parser.add_argument(
         "--no-clean-up",
         action="store_true",
-        help="Prevents removal of JSON files created during the job process",
+        help="Prevents removal of temporary files created during the job process",
     )
 
     args = parser.parse_args()
@@ -69,6 +70,10 @@ def main():
     if not args.dovi_tool:
         parser.print_help()
         exit_application("\nError: -d/--dovi-tool is required", 1)
+
+    if not args.output:
+        output = args.input.parent / Path(args.input.stem + "_out").with_suffix(".bin")
+        setattr(args, "output", output)
 
     try:
         ProcessJob(args)
