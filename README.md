@@ -14,7 +14,7 @@ It depends on the path to `dovi_tool` being fed via an argument. You can get dov
 
 ```
 usage: DoviCrop [-h] [-v] [-i INPUT] [-o OUTPUT] [-l LEFT_CROP] [-r RIGHT_CROP] [-t TOP_CROP]
-                [-b BOTTOM_CROP] [-m {0,1,2,3,4,5}] [-c] [-d DOVI_TOOL] [--no-clean-up]
+                [-b BOTTOM_CROP] [-m {0,1,2,3,4,5}] [-c] [-f] [-d DOVI_TOOL] [--no-clean-up]
 
 options:
   -h, --help            show this help message and exit
@@ -35,6 +35,8 @@ options:
                         Set mode for RPU
   -c, --check           Checks input RPU to see if it has valid metadata and exits the
                         application
+  -f, --fix-negative-crops
+                        Automatically resolve negative crops
   -d DOVI_TOOL, --dovi-tool DOVI_TOOL
                         Path to dovi_tool executable
   --no-clean-up         Prevents removal of temporary files created during the job process
