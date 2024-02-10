@@ -70,9 +70,29 @@ class ProcessJob:
                     top = preset.get("top", 0) - self.args.top_crop
                     bottom = preset.get("bottom", 0) - self.args.bottom_crop
 
-                    # Check for negative crop values
-                    if any(value < 0 for value in [left, right, top, bottom]):
-                        raise DoviCropValueError("Negative crop values are not allowed")
+                    if self.args.fix_negative_crops:
+                        # Convert negative crop values to 0
+                        left = max(0, left)
+                        right = max(0, right)
+                        top = max(0, top)
+                        bottom = max(0, bottom)
+                    else:
+                        over_cropped_values = []
+                        # Check for negative crop values
+                        if left < 0:
+                            over_cropped_values.append(f"left={left}")
+                        if right < 0:
+                            over_cropped_values.append(f"right={right}")
+                        if top < 0:
+                            over_cropped_values.append(f"top={top}")
+                        if bottom < 0:
+                            over_cropped_values.append(f"bottom={bottom}")
+
+                        if over_cropped_values:
+                            raise DoviCropValueError(
+                                "Negative crop values are not allowed, "
+                                f"negative values are {', '.join(over_cropped_values)}"
+                            )
 
                     # Update preset values
                     preset["left"] = left

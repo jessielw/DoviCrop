@@ -51,6 +51,12 @@ def main():
         help="Checks input RPU to see if it has valid metadata and exits the application",
     )
     parser.add_argument(
+        "-f",
+        "--fix-negative-crops",
+        action="store_true",
+        help="Automatically resolve negative crops",
+    )
+    parser.add_argument(
         "-d",
         "--dovi-tool",
         help="Path to dovi_tool executable",
