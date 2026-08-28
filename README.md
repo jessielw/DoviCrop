@@ -10,6 +10,32 @@ You can either use it as a script in Python or download/build the exe for your p
 
 It depends on the path to `dovi_tool` being fed via an argument. You can get dovi_tool here https://github.com/quietvoid/dovi_tool.
 
+All dovi_tool versions are supported. 2.3.3 changed the shape of the
+`export --data level5=` output, and DoviCrop handles both the new and the older format.
+
+## Development
+
+This project uses [uv](https://github.com/astral-sh/uv).
+
+```
+uv sync
+uv run python app.py -i RPU.bin -d ./dovi_tool.exe -m 2 -t 20 -b 20
+```
+
+Linting and formatting are handled by [ruff](https://github.com/astral-sh/ruff):
+
+```
+uv run ruff check .
+uv run ruff format .
+```
+
+To build the standalone exe, place your PyInstaller checkout in `custom-pyinstaller/` and run:
+
+```
+uv sync --group build
+uv run --group build python build.py
+```
+
 ## Usage
 
 ```
@@ -45,5 +71,9 @@ options:
 ## Example
 
 ```
-"RPU.bin" -d "dovi_tool.exe" -m 2 -t 20 -b 20
+DoviCrop -i "RPU.bin" -d "./dovi_tool.exe" -m 2 -t 20 -b 20
 ```
+
+Note: pass `dovi_tool` as a path, not a bare name. On Windows a bare `dovi_tool.exe` fails with
+`[WinError 2] The system cannot find the file specified` even when it sits in the working directory,
+because the working directory is not searched. Use `./dovi_tool.exe` or an absolute path.

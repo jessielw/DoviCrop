@@ -1,19 +1,19 @@
 import json
-from argparse import ArgumentParser
-from pathlib import Path
 import subprocess as sp
+from argparse import Namespace as ArgNameSpace
+from pathlib import Path
 
 from cli.exceptions import (
-    DoviCropRPUError,
     DoviCropJSONError,
-    DoviCropValueError,
     DoviCropKeyError,
+    DoviCropRPUError,
+    DoviCropValueError,
 )
 from cli.utils import exit_application
 
 
 class ProcessJob:
-    def __init__(self, args: ArgumentParser.parse_args):
+    def __init__(self, args: ArgNameSpace):
         self.args = args
         self.check_rpu(args.input, exit_on_success=args.check)
         ar_json = self.export_active_areas()
@@ -27,7 +27,7 @@ class ProcessJob:
         """Basic check to see if the RPU has ANY data inside of it"""
         rpu_size = file_path.stat().st_size
         if rpu_size == 0:
-            DoviCropRPUError(
+            raise DoviCropRPUError(
                 f"{file_path.name} is 0 bytes, this indicates a broken RPU file"
             )
         else:
@@ -56,11 +56,15 @@ class ProcessJob:
         try:
             with open(ar_json, "r") as json_file:
                 rpu_dict = json.load(json_file)
-                rpu_dict.update({"crop": True})
-                json_dict = {"active_area": rpu_dict}
+                # dovi_tool >= 2.3.3 exports a full editor config with the
+                # active area nested under "active_area", older versions
+                # export the bare active area object
+                active_area = rpu_dict.get("active_area") or rpu_dict
+                active_area.update({"crop": True})
+                json_dict = {"active_area": active_area}
 
                 # Check if "presets" key exists
-                presets = json_dict["active_area"].get("presets", [])
+                presets = active_area.get("presets", [])
                 if not presets:
                     raise DoviCropKeyError("No 'presets' found in the JSON file")
 

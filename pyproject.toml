@@ -1,20 +1,25 @@
-[tool.poetry]
+[project]
 name = "dovicrop"
-version = "0.1.0"
+version = "0.2.1"
 description = "CLI to properly crop RPU's extracted via dovi_tool"
-authors = ["Jessie Wilson"]
+authors = [{ name = "Jessie Wilson" }]
 license = "MIT"
 readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
 
-[tool.poetry.dependencies]
-python = "3.11.5"
+[dependency-groups]
+dev = ["ruff>=0.14"]
+build = ["pyinstaller", "pyinstaller-hooks-contrib>=2024.0,<2025"]
 
+[tool.uv]
+package = false
 
-[tool.poetry.group.dev.dependencies]
-black = "^23.12.1"
-pyinstaller = {path = "custom-pyinstaller", develop = true}
-pyinstaller-hooks-contrib = "^2024.0"
+[tool.uv.sources]
+pyinstaller = { path = "custom-pyinstaller", editable = true }
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.ruff]
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

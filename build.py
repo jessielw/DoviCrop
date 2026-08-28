@@ -38,7 +38,7 @@ def build_app():
         Path(Path("dist") / f"DoviCrop{exe_str}").is_file()
         and str(build_job.returncode) == "0"
     ):
-        success = f'\nSuccess!\nPath to exe: {str(Path.cwd() / (Path(Path("dist") / f"DoviCrop{exe_str}")))}'
+        success = f"\nSuccess!\nPath to exe: {str(Path.cwd() / (Path(Path('dist') / f'DoviCrop{exe_str}')))}"
 
     # change directory back to original directory
     os.chdir(app_script.parent)
