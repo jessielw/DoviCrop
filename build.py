@@ -1,6 +1,7 @@
 from pathlib import Path
 from subprocess import run
 import os
+import sys
 
 from cli.utils import get_executable_string_by_os
 
@@ -17,17 +18,17 @@ def build_app():
     # change directory so we output all of pyinstallers files in it's own folder
     os.chdir(pyinstaller_folder)
 
+    command = [sys.executable, "-m", "PyInstaller", "-n", "DoviCrop", "--onefile"]
+
+    # the .ico is only usable on windows; pyinstaller wants an .icns on macos
+    # and ignores the icon entirely on linux
+    if sys.platform == "win32":
+        command.append(f"--icon={str(icon_path)}")
+
+    command.append(str(app_script))
+
     # run pyinstaller command
-    build_job = run(
-        [
-            "pyinstaller",
-            "-n",
-            "DoviCrop",
-            "--onefile",
-            f"--icon={str(icon_path)}",
-            str(app_script),
-        ]
-    )
+    build_job = run(command)
 
     # get exe string based on os
     exe_str = get_executable_string_by_os()

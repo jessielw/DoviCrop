@@ -1,0 +1,152 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # PyInstaller is built from source so each platform gets a freshly compiled
+  # bootloader rather than the prebuilt one shipped on PyPI, which antivirus
+  # heuristics frequently flag as a false positive.
+  PYINSTALLER_VERSION: "6.22.2"
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: windows-x86_64
+            os: windows-latest
+            archive: zip
+          # built on the oldest supported runner so the binary works on
+          # distros with an older glibc than ubuntu-latest ships
+          - target: linux-x86_64
+            os: ubuntu-22.04
+            archive: tar.gz
+          - target: macos-arm64
+            os: macos-latest
+            archive: tar.gz
+          - target: macos-x86_64
+            os: macos-13
+            archive: tar.gz
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true
+
+      - name: Create build environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv python install "${PYTHON_VERSION}"
+          uv venv --python "${PYTHON_VERSION}" .venv
+          if [ "${RUNNER_OS}" = "Windows" ]; then
+            echo "VENV_PY=${GITHUB_WORKSPACE}/.venv/Scripts/python.exe" >> "${GITHUB_ENV}"
+          else
+            echo "VENV_PY=${GITHUB_WORKSPACE}/.venv/bin/python" >> "${GITHUB_ENV}"
+          fi
+
+      - name: Verify tag matches project version
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$("${VENV_PY}" -c "import sys; sys.path.insert(0, '.'); from cli._version import __version__; print(__version__)")
+          pyproject=$("${VENV_PY}" -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          echo "tag=${GITHUB_REF_NAME} _version.py=${version} pyproject.toml=${pyproject}"
+          if [ "${GITHUB_REF_NAME}" != "${version}" ] || [ "${version}" != "${pyproject}" ]; then
+            echo "::error::version mismatch - tag '${GITHUB_REF_NAME}', cli/_version.py '${version}', pyproject.toml '${pyproject}' must all agree"
+            exit 1
+          fi
+
+      - name: Build PyInstaller with a freshly compiled bootloader
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch "v${PYINSTALLER_VERSION}" \
+            https://github.com/pyinstaller/pyinstaller.git "${RUNNER_TEMP}/pyinstaller"
+          # waf picks up MSVC on windows, gcc on linux and clang on macos, all
+          # of which are preinstalled on the runners
+          (cd "${RUNNER_TEMP}/pyinstaller/bootloader" && "${VENV_PY}" ./waf all)
+          uv pip install --python "${VENV_PY}" "${RUNNER_TEMP}/pyinstaller"
+
+      - name: Build executable
+        shell: bash
+        run: |
+          "${VENV_PY}" build.py
+
+      - name: Smoke test the executable
+        shell: bash
+        run: |
+          set -euo pipefail
+          binary="pyinstaller_build/dist/DoviCrop$( [ "${RUNNER_OS}" = "Windows" ] && echo ".exe" || echo "" )"
+          chmod +x "${binary}" || true
+          "${binary}" --version
+
+      - name: Package
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$("${VENV_PY}" -c "import sys; sys.path.insert(0, '.'); from cli._version import __version__; print(__version__)")
+          name="DoviCrop-${version}-${{ matrix.target }}"
+          staging="${RUNNER_TEMP}/${name}"
+          mkdir -p "${staging}" "${GITHUB_WORKSPACE}/artifacts"
+          cp README.md LICENSE "${staging}/"
+          if [ "${RUNNER_OS}" = "Windows" ]; then
+            cp pyinstaller_build/dist/DoviCrop.exe "${staging}/"
+          else
+            cp pyinstaller_build/dist/DoviCrop "${staging}/"
+            chmod +x "${staging}/DoviCrop"
+          fi
+          cd "${RUNNER_TEMP}"
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            7z a -tzip "${GITHUB_WORKSPACE}/artifacts/${name}.zip" "${name}" > /dev/null
+          else
+            tar -czf "${GITHUB_WORKSPACE}/artifacts/${name}.tar.gz" "${name}"
+          fi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.target }}
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd artifacts
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Publish release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release create "${GITHUB_REF_NAME}" artifacts/* --generate-notes --title "${GITHUB_REF_NAME}"
