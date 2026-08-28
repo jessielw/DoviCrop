@@ -1,6 +1,6 @@
 [project]
 name = "dovicrop"
-version = "0.2.2"
+version = "0.2.3"
 description = "CLI to properly crop RPU's extracted via dovi_tool"
 authors = [{ name = "Jessie Wilson" }]
 license = "MIT"
