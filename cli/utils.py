@@ -1,6 +1,7 @@
-import sys
 import platform
+import sys
 from pathlib import Path
+from typing import Any
 
 from cli.enums import FileType
 from cli.exceptions import DoviCropFileError, DoviCropValueError
@@ -29,7 +30,7 @@ def validate_file(value: str, file_type: FileType) -> Path:
     return path_obj
 
 
-def validate_int(value: any) -> int:
+def validate_int(value: Any) -> int:
     if value.isdigit():
         return int(value)
     else:
