@@ -152,4 +152,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh release create "${GITHUB_REF_NAME}" artifacts/* --generate-notes --title "${GITHUB_REF_NAME}"
+        run: |
+          set -euo pipefail
+          # the release may already exist - either it was created by hand in the
+          # web ui (which pushes the tag that triggered this run) or this is a
+          # re-run of a job that already published. attach to it rather than
+          # failing, and leave any existing release notes alone
+          if gh release view "${GITHUB_REF_NAME}" > /dev/null 2>&1; then
+            echo "release ${GITHUB_REF_NAME} exists, uploading assets to it"
+            gh release upload "${GITHUB_REF_NAME}" artifacts/* --clobber
+          else
+            echo "creating release ${GITHUB_REF_NAME}"
+            gh release create "${GITHUB_REF_NAME}" artifacts/* --generate-notes --title "${GITHUB_REF_NAME}"
+          fi
