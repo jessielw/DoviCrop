@@ -1,0 +1,15 @@
+version: 2
+
+updates:
+  # keeps the SHA pins in .github/workflows current, rewriting both the pinned
+  # commit and the trailing version comment
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
